@@ -186,9 +186,7 @@
       {
         q: 'Что делать, если нет ответа на мой вопрос?',
         a: 'Пиши нам в Telegram: @careerday_help или на почту careerday@futuretoday.ru, и мы тебе поможем :)'
-      },
-              { q: 'Где искать работу, если я технарь?', a: 'Загляни на сайт со <a href="https://careerday.fut.ru/events" target="_blank" rel="noopener">всеми Днями карьеры FutureToday</a>.\nТам ты найдешь карьерные форумы для айтишников и специалистов бизнес-сферы :)' },
-
+      }
     ];
 
     const tabReg = document.getElementById('tabReg');
@@ -548,7 +546,7 @@
 
         const answer = document.createElement('div');
         answer.className = 'faq-a';
-        answer.textContent = item.a;
+        answer.innerHTML = item.a;
 
         details.appendChild(summary);
         details.appendChild(answer);
