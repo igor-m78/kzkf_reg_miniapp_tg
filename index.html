@@ -9,8 +9,14 @@
 </head>
 <body>
   <div class="app-wrap">
-    <div id="ft-form-universal" class="ft-form-core">
-      <form id="ftForm" class="ft-form" autocomplete="on" novalidate>
+    <div class="topbar">
+      <button class="tabbtn active" id="tabReg" type="button">Регистрация</button>
+      <button class="tabbtn" id="tabFaq" type="button">FAQ</button>
+    </div>
+
+    <section class="section active" id="sectionReg">
+      <div id="ft-form-universal" class="ft-form-core">
+        <form id="ftForm" class="ft-form" autocomplete="on" novalidate>
         <h1 class="ft-heading">FutureToday Career Forum</h1>
         <p class="ft-subheading">Заполни короткую форму — отправим билет на почту</p>
 
@@ -99,7 +105,22 @@
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </section>
+
+    <section class="section" id="sectionFaq">
+      <div class="faq-card">
+        <h2 class="faq-title">FAQ</h2>
+        <div id="faqList"></div>
+        <div class="faq-meta">
+          Актуальные новости о форуме — в
+          <a href="https://t.me/fut_careerforum" target="_blank" rel="noopener">Telegram</a>,
+          <a href="https://www.instagram.com/futuretoday.kz?igsh=MnI1MnJhaGEzMXB5" target="_blank" rel="noopener">Instagram</a>
+          и
+          <a href="https://www.tiktok.com/@futuretoday.kz" target="_blank" rel="noopener">TikTok</a>.
+        </div>
+      </div>
+    </section>
   </div>
 
   <script>
@@ -132,6 +153,43 @@
       'техническая (не it) специальность',
       'другое'
     ];
+
+    const FAQ_ITEMS = [
+      {
+        q: 'Что это за мероприятие?',
+        a: 'FutureToday Career Forum — это карьерный форум для молодых и заряженных специалистов. На форуме будут представители 10+ компаний, которые готовы работать и уже работают с начинающими профессионалами. Компании предлагают стажировки и вакансии, а также приглашают на следующие этапы отбора!'
+      },
+      {
+        q: 'Зачем куда-то идти, когда есть сайты и тг-каналы с вакансиями?',
+        a: 'Ты пообщаешься с представителями и рекрутерами сразу 10+ компаний в одном месте и установишь прямой контакт с потенциальными работодателями. Интересный факт: более 50% вакансий закрываются без их публикации на сайтах :)'
+      },
+      {
+        q: 'Как попасть на Career Forum?',
+        a: 'Зарегистрируйся, получи билет ближе к мероприятию на почту и приходи 17 апреля в Бакшасарай (ул. Климента Тимирязева, 42к1), 14:00–17:00.'
+      },
+      {
+        q: 'Что делать, если не успеваю к началу мероприятия?',
+        a: 'Можно приходить в любое время, в которое проходит форум — с 14:00 до 17:00. Стендовая сессия с компаниями будет проходить на протяжении всего мероприятия.'
+      },
+      {
+        q: 'Можно ли приходить с друзьями?',
+        a: 'Нужно! Им тоже нужно зарегистрироваться по твоей уникальной ссылке (пришлем ее после регистрации вместе с билетом) и прийти на форум. Кстати, мы проводим конкурс, и с каждым приглашенным другом растут твои шансы на победу:
+
+• придешь с 3+ друзьями — сертификат Giftery на 3000 тенге и пиццу на вашу компанию прямо на площадке!
+• приведешь 5+ друзей — получишь Giftery на 6000 тенге и 2 пиццы!
+• бонус: участнику, который приведет больше всех друзей, подарим суперприз на выбор.'
+      },
+      {
+        q: 'Я хочу следить за актуальной информацией о форуме и компаниях. Как не пропустить важные новости?',
+        a: 'Всё очень просто — подписывайся на наши соцсети. Так ты будешь одним из первых получать все самые свежие новости о форуме, компаниях и стажировках и точно ничего не пропустишь.'
+      }
+    ];
+
+    const tabReg = document.getElementById('tabReg');
+    const tabFaq = document.getElementById('tabFaq');
+    const sectionReg = document.getElementById('sectionReg');
+    const sectionFaq = document.getElementById('sectionFaq');
+    const faqList = document.getElementById('faqList');
 
     const formCore = document.getElementById('ft-form-universal');
     const form = document.getElementById('ftForm');
@@ -463,6 +521,35 @@
       landingTypeInp.value = 'kzkf_tg';
     }
 
+    function setActiveTab(tabName) {
+      const isFaq = tabName === 'faq';
+      tabReg.classList.toggle('active', !isFaq);
+      tabFaq.classList.toggle('active', isFaq);
+      sectionReg.classList.toggle('active', !isFaq);
+      sectionFaq.classList.toggle('active', isFaq);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      tg?.HapticFeedback?.selectionChanged?.();
+    }
+
+    function renderFaq() {
+      faqList.innerHTML = '';
+      FAQ_ITEMS.forEach((item, index) => {
+        const details = document.createElement('details');
+        if (index === 0) details.open = true;
+
+        const summary = document.createElement('summary');
+        summary.textContent = item.q;
+
+        const answer = document.createElement('div');
+        answer.className = 'faq-a';
+        answer.textContent = item.a;
+
+        details.appendChild(summary);
+        details.appendChild(answer);
+        faqList.appendChild(details);
+      });
+    }
+
     async function init() {
       populateStreams();
       careerdayInp.value = CONFIG.FORUM_FIXED;
@@ -476,6 +563,15 @@
       if (botTag) localStorage.setItem('bot_tag', botTag);
 
       await loadVuzSheet();
+      renderFaq();
+
+      tabReg.addEventListener('click', function () {
+        setActiveTab('reg');
+      });
+
+      tabFaq.addEventListener('click', function () {
+        setActiveTab('faq');
+      });
 
       streamSel.addEventListener('change', function () {
         toggleCustomFacultyField(this.value === 'другое');
