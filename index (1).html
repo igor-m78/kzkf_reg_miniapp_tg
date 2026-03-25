@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>FutureToday Career Forum — Регистрация</title>
+  <link rel="stylesheet" href="kzkf-miniapp.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div class="app-wrap">
+    <div id="ft-form-universal" class="ft-form-core">
+      <form id="ftForm" class="ft-form" autocomplete="on" novalidate>
+        <h1 class="ft-heading">FutureToday Career Forum</h1>
+        <p class="ft-subheading">Заполни короткую форму — отправим билет на почту</p>
+
+        <div class="ft-field">
+          <label for="ftFirstname">Имя</label>
+          <input id="ftFirstname" name="firstname" type="text" required />
+        </div>
+
+        <div class="ft-field">
+          <label for="ftEmail">Твой актуальный email (пришлем на него билет)</label>
+          <input id="ftEmail" name="email" type="email" required placeholder="name@example.com" />
+          <div class="ft-error" id="ftErrEmail"></div>
+        </div>
+
+        <div class="ft-field">
+          <label for="ftPhone">Номер телефона</label>
+          <input id="ftPhone" name="mobteleph" type="tel" required placeholder="+77017777777" inputmode="tel" />
+          <div class="ft-error" id="ftErrPhone"></div>
+        </div>
+
+        <input id="ftCareerday" name="careerday" type="hidden" value="КЗКФ" />
+
+        <div class="ft-field ft-autocomplete">
+          <label for="ftVuz">Текущее или последнее место учебы</label>
+          <input id="ftVuz" name="vuz_title" type="text" placeholder="Начните вводить..." autocomplete="off" />
+          <input type="hidden" id="ftVuzUnified" name="vuz_unified" value="" />
+          <div class="ft-dropdown" id="ftVuzDropdown" style="display:none;"></div>
+        </div>
+
+        <div class="ft-field" id="ftYearWrap">
+          <label for="ftYear">На каком курсе ты обучаешься?</label>
+          <select id="ftYear" name="year_of_grad" required>
+            <option value="" selected disabled>Выберите</option>
+            <option>1 курс бакалавриата/специалитета</option>
+            <option>2 курс бакалавриата/специалитета</option>
+            <option>3 курс бакалавриата/специалитета</option>
+            <option>4 курс бакалавриата/специалитета</option>
+            <option>5 курс специалитета</option>
+            <option>1 курс магистратуры</option>
+            <option>2 курс магистратуры</option>
+            <option>выпускник(-ца)</option>
+            <option>другое</option>
+          </select>
+        </div>
+
+        <div class="ft-field" id="ftStreamWrap">
+          <label for="ftStream" id="ftStreamLabel">На каком направлении обучаешься? Выбери самое близкое к факультету</label>
+          <select id="ftStream" name="stream" required></select>
+        </div>
+
+        <div class="ft-field" id="ftCustomFacultyWrap" style="display:none;">
+          <label for="ftCustomFaculty">Укажи, пожалуйста, свой факультет</label>
+          <input id="ftCustomFaculty" name="custom_faculty" type="text" placeholder="Например: факультет математики" />
+          <div class="ft-error" id="ftErrCustomFaculty"></div>
+        </div>
+
+        <div class="ft-field">
+          <label class="ft-consent-label">
+            <input id="ftConsent" type="checkbox" required>
+            <span class="ft-consent-text">
+              Нажимая кнопку «Зарегистрироваться», Вы подтверждаете свое согласие с условиями
+              <a href="https://futuretoday.kz/user-agreement" target="_blank" rel="noopener">Пользовательского соглашения</a>.
+            </span>
+          </label>
+          <div class="ft-error" id="ftErrConsent"></div>
+        </div>
+
+        <input type="hidden" id="ftLandingType" name="landing_type" value="kzkf_tg">
+        <input type="hidden" id="ftFormSource" name="form_source" value="telegram_webapp">
+        <input type="hidden" id="ftStreamFinal" name="stream_final" value="">
+
+        <div class="ft-button-container">
+          <button id="ftSubmitBtn" class="ft-submit-btn" type="submit">Зарегистрироваться</button>
+        </div>
+
+        <div class="ft-message" id="ftFormMsg"></div>
+        <div class="ft-note">Код форума: КЗКФ · Telegram Mini App</div>
+      </form>
+
+      <div class="ft-success-container" id="ftSuccessContainer">
+        <div class="ft-success-message">
+          <h2 class="ft-success-heading">ПОЛУЧИЛИ ТВОЮ РЕГИСТРАЦИЮ</h2>
+          <div class="ft-success-text" id="ftSuccessText"></div>
+          <div class="ft-button-container">
+            <button class="ft-close-btn" id="ftCloseSuccessBtn" type="button">Закрыть</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      if (tg.themeParams?.bg_color) document.body.style.background = tg.themeParams.bg_color;
+      if (tg.themeParams?.text_color) document.body.style.color = tg.themeParams.text_color;
+    }
+
+    const CONFIG = {
+      API_BASE: 'https://functions.yandexcloud.net/d4eajagq70ar2qug7ar5',
+      FORUM_FIXED: 'КЗКФ',
+      SPREADSHEET_ID: '16a3MSd-b8F2T1EbwaFVBMyPmF5oat9UUajK3VytQuis',
+      KZ_VUZ_SHEET: 'АЛМ вузы',
+      VUZ_MIN_CHARS: 2,
+      VUZ_SUGGEST_LIMIT: 20,
+      TG_CHANNEL: { text: '@fut_careerforum', url: 'https://t.me/fut_careerforum' },
+      CONTACT_EMAIL: 'careerday@futuretoday.ru',
+      CONTACT_TG: { text: '@careerday_help', url: 'https://t.me/careerday_help' }
+    };
+
+    const STREAMS = [
+      'бизнес-специальность',
+      'it-специальность',
+      'техническая (не it) специальность',
+      'другое'
+    ];
+
+    const formCore = document.getElementById('ft-form-universal');
+    const form = document.getElementById('ftForm');
+    const successContainer = document.getElementById('ftSuccessContainer');
+    const successText = document.getElementById('ftSuccessText');
+    const closeSuccessBtn = document.getElementById('ftCloseSuccessBtn');
+
+    const firstnameInp = document.getElementById('ftFirstname');
+    const emailInp = document.getElementById('ftEmail');
+    const phoneInp = document.getElementById('ftPhone');
+    const careerdayInp = document.getElementById('ftCareerday');
+    const vuzInp = document.getElementById('ftVuz');
+    const vuzUnifiedInp = document.getElementById('ftVuzUnified');
+    const vuzDropdown = document.getElementById('ftVuzDropdown');
+    const yearSel = document.getElementById('ftYear');
+    const streamSel = document.getElementById('ftStream');
+    const customFacultyWrap = document.getElementById('ftCustomFacultyWrap');
+    const customFacultyInp = document.getElementById('ftCustomFaculty');
+    const streamFinalInp = document.getElementById('ftStreamFinal');
+    const landingTypeInp = document.getElementById('ftLandingType');
+    const consentChk = document.getElementById('ftConsent');
+    const submitBtn = document.getElementById('ftSubmitBtn');
+    const formMsg = document.getElementById('ftFormMsg');
+
+    const errEmail = document.getElementById('ftErrEmail');
+    const errPhone = document.getElementById('ftErrPhone');
+    const errConsent = document.getElementById('ftErrConsent');
+    const errCustomFaculty = document.getElementById('ftErrCustomFaculty');
+
+    function setError(el, text) {
+      if (!el) return;
+      el.style.display = text ? 'block' : 'none';
+      el.textContent = text || '';
+    }
+
+    function showFormMessage(text) {
+      formMsg.textContent = text || '';
+      formMsg.className = text ? 'ft-message error' : 'ft-message';
+      formMsg.style.display = text ? 'block' : 'none';
+    }
+
+    function normalizePhone(raw) {
+      let s = (raw || '').trim().replace(/[^\d+]/g, '');
+      if (/^8\d{10}$/.test(s)) s = '+7' + s.slice(1);
+      if (/^7\d{10}$/.test(s)) s = '+7' + s;
+      return s;
+    }
+
+    function isValidPhone(s) {
+      return /^\+7\d{10}$/.test(s);
+    }
+
+    function isValidEmail(s) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test((s || '').trim());
+    }
+
+    function normalizeText(s) {
+      return (s || '')
+        .toLowerCase()
+        .replace(/ё/g, 'е')
+        .replace(/[^\p{L}\p{N}\s\-\(\)\.]/gu, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function parseCSV(text) {
+      const rows = [];
+      let row = [];
+      let cur = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (inQuotes) {
+          if (ch === '"') {
+            if (text[i + 1] === '"') {
+              cur += '"';
+              i++;
+            } else {
+              inQuotes = false;
+            }
+          } else {
+            cur += ch;
+          }
+        } else {
+          if (ch === '"') inQuotes = true;
+          else if (ch === ',') {
+            row.push(cur);
+            cur = '';
+          } else if (ch === '\n') {
+            row.push(cur);
+            rows.push(row);
+            row = [];
+            cur = '';
+          } else if (ch !== '\r') {
+            cur += ch;
+          }
+        }
+      }
+
+      if (cur.length || row.length) {
+        row.push(cur);
+        rows.push(row);
+      }
+
+      return rows;
+    }
+
+    function findColIndex(headers, variants) {
+      const normHeaders = headers.map(h => normalizeText(h));
+      for (const variant of variants) {
+        const idx = normHeaders.findIndex(h => h === normalizeText(variant));
+        if (idx !== -1) return idx;
+      }
+      return -1;
+    }
+
+    function csvUrlBySheetName(sheetName) {
+      return `https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+    }
+
+    let vuzEntries = [];
+    let vuzLoaded = false;
+
+    async function loadVuzSheet() {
+      if (vuzLoaded) return;
+      try {
+        const response = await fetch(csvUrlBySheetName(CONFIG.KZ_VUZ_SHEET), { method: 'GET', mode: 'cors' });
+        if (!response.ok) throw new Error('Не удалось загрузить CSV из Google Sheets');
+        const text = await response.text();
+        const rows = parseCSV(text).filter(r => r.some(c => String(c || '').trim() !== ''));
+        if (!rows.length) {
+          vuzEntries = [];
+          vuzLoaded = true;
+          return;
+        }
+
+        const headers = rows[0].map(String);
+        const colLabel = findColIndex(headers, ['Название УЗ', 'Название', 'ВУЗ', 'УЗ']);
+        const colAlias = findColIndex(headers, ['От пользователя', 'Пользователь', 'Alias', 'Синоним']);
+        const colUnified = findColIndex(headers, ['Унифицированное', 'Унифиц.', 'Код', 'ID']);
+
+        const li = colLabel !== -1 ? colLabel : 0;
+        const ai = colAlias !== -1 ? colAlias : 1;
+        const ui = colUnified !== -1 ? colUnified : 2;
+
+        const map = new Map();
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          const label = String(row[li] ?? '').trim();
+          const alias = String(row[ai] ?? '').trim();
+          const unified = String(row[ui] ?? '').trim();
+          if (!unified) continue;
+
+          if (!map.has(unified)) {
+            map.set(unified, { label: label || unified, unified, aliases: new Set() });
+          }
+
+          const item = map.get(unified);
+          if (label) item.label = label;
+          if (label) item.aliases.add(label);
+          if (alias) item.aliases.add(alias);
+          item.aliases.add(unified);
+        }
+
+        vuzEntries = Array.from(map.values()).map(item => ({
+          label: item.label,
+          unified: item.unified,
+          searchBlob: Array.from(item.aliases).map(normalizeText).filter(Boolean).join(' | ')
+        })).sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+
+        vuzLoaded = true;
+      } catch (error) {
+        console.error('Ошибка загрузки списка вузов:', error);
+        vuzEntries = [];
+        vuzLoaded = true;
+      }
+    }
+
+    function hideVuzDropdown() {
+      vuzDropdown.style.display = 'none';
+      vuzDropdown.innerHTML = '';
+    }
+
+    function scoreItem(item, qNorm) {
+      const label = normalizeText(item.label);
+      if (label.startsWith(qNorm)) return 0;
+      const idx = item.searchBlob.indexOf(qNorm);
+      if (idx === 0) return 1;
+      if (idx > 0) return 2;
+      return 99;
+    }
+
+    function searchVuz(q) {
+      const qNorm = normalizeText(q);
+      if (qNorm.length < CONFIG.VUZ_MIN_CHARS || !vuzEntries.length) return [];
+
+      const results = [];
+      for (const item of vuzEntries) {
+        if (item.searchBlob.includes(qNorm)) {
+          results.push(item);
+          if (results.length >= 250) break;
+        }
+      }
+
+      results.sort((a, b) => {
+        const sa = scoreItem(a, qNorm);
+        const sb = scoreItem(b, qNorm);
+        if (sa !== sb) return sa - sb;
+        return a.label.localeCompare(b.label, 'ru');
+      });
+
+      return results.slice(0, CONFIG.VUZ_SUGGEST_LIMIT);
+    }
+
+    function showVuzDropdown(items) {
+      if (!items.length) {
+        hideVuzDropdown();
+        return;
+      }
+
+      vuzDropdown.innerHTML = '';
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'ft-dropdown-item';
+        div.textContent = item.label;
+        div.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          vuzInp.value = item.label;
+          vuzUnifiedInp.value = item.unified;
+          hideVuzDropdown();
+        });
+        vuzDropdown.appendChild(div);
+      });
+      vuzDropdown.style.display = 'block';
+    }
+
+    function toggleCustomFacultyField(show) {
+      customFacultyWrap.style.display = show ? 'block' : 'none';
+      if (!show) {
+        customFacultyInp.value = '';
+        setError(errCustomFaculty, '');
+      }
+    }
+
+    function updateStreamFinalValue() {
+      if (streamSel.value === 'другое') {
+        const customValue = (customFacultyInp.value || '').trim();
+        streamFinalInp.value = customValue || 'другое';
+      } else {
+        streamFinalInp.value = streamSel.value || '';
+      }
+    }
+
+    function populateStreams() {
+      streamSel.innerHTML = '';
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.disabled = true;
+      placeholder.selected = true;
+      placeholder.textContent = 'Выберите';
+      streamSel.appendChild(placeholder);
+
+      STREAMS.forEach(value => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = value;
+        streamSel.appendChild(option);
+      });
+    }
+
+    function getStartParamRaw() {
+      const sp = tg?.initDataUnsafe?.start_param;
+      if (sp && String(sp).trim()) return String(sp).trim();
+
+      const url = new URL(location.href);
+      const fromQuery =
+        url.searchParams.get('startapp') ||
+        url.searchParams.get('bot_tag') ||
+        url.searchParams.get('tgWebAppStartParam') ||
+        url.searchParams.get('start_param') ||
+        url.searchParams.get('event') ||
+        url.searchParams.get('forum') ||
+        url.searchParams.get('start');
+
+      if (fromQuery && String(fromQuery).trim()) return String(fromQuery).trim();
+
+      const hash = (location.hash || '').replace(/^#/, '');
+      if (hash) {
+        const params = new URLSearchParams(hash);
+        const fromHash = params.get('bot_tag');
+        if (fromHash && String(fromHash).trim()) return String(fromHash).trim();
+      }
+
+      return (localStorage.getItem('bot_tag') || '').trim();
+    }
+
+    function generateSuccessText() {
+      return `Получили твою регистрацию на FutureToday Career Forum.<br>
+        Отправим письмо с билетом на указанную тобой почту.<br>
+        Если не увидишь его, проверь спам и промоакции — иногда письмо улетает туда.<br><br>
+        А ещё подписывайся на наш ТГ <a href="${CONFIG.TG_CHANNEL.url}" target="_blank" rel="noopener">${CONFIG.TG_CHANNEL.text}</a> — там все актуальности.<br>
+        Связь с организаторами: <a href="mailto:${CONFIG.CONTACT_EMAIL}">${CONFIG.CONTACT_EMAIL}</a> или <a href="${CONFIG.CONTACT_TG.url}" target="_blank" rel="noopener">${CONFIG.CONTACT_TG.text}</a>`;
+    }
+
+    function showSuccessMessage() {
+      successText.innerHTML = generateSuccessText();
+      form.style.display = 'none';
+      successContainer.style.display = 'block';
+      setTimeout(() => formCore.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+      tg?.HapticFeedback?.notificationOccurred?.('success');
+    }
+
+    function closeSuccess() {
+      if (tg) {
+        tg.close();
+        return;
+      }
+      successContainer.style.display = 'none';
+      form.style.display = 'block';
+      form.reset();
+      vuzUnifiedInp.value = '';
+      toggleCustomFacultyField(false);
+      updateStreamFinalValue();
+      showFormMessage('');
+      populateStreams();
+      careerdayInp.value = CONFIG.FORUM_FIXED;
+      landingTypeInp.value = 'kzkf_tg';
+    }
+
+    async function init() {
+      populateStreams();
+      careerdayInp.value = CONFIG.FORUM_FIXED;
+      landingTypeInp.value = 'kzkf_tg';
+
+      if (tg?.initDataUnsafe?.user && firstnameInp && !firstnameInp.value) {
+        firstnameInp.value = tg.initDataUnsafe.user.first_name || '';
+      }
+
+      const botTag = getStartParamRaw();
+      if (botTag) localStorage.setItem('bot_tag', botTag);
+
+      await loadVuzSheet();
+
+      streamSel.addEventListener('change', function () {
+        toggleCustomFacultyField(this.value === 'другое');
+        updateStreamFinalValue();
+      });
+
+      customFacultyInp.addEventListener('input', updateStreamFinalValue);
+      vuzInp.addEventListener('input', function () {
+        vuzUnifiedInp.value = '';
+      });
+
+      let vuzTimer = null;
+      vuzInp.addEventListener('keyup', function () {
+        clearTimeout(vuzTimer);
+        vuzTimer = setTimeout(function () {
+          const q = vuzInp.value || '';
+          if (normalizeText(q).length < CONFIG.VUZ_MIN_CHARS) {
+            hideVuzDropdown();
+            return;
+          }
+          showVuzDropdown(searchVuz(q));
+        }, 80);
+      });
+
+      vuzInp.addEventListener('focus', async function () {
+        await loadVuzSheet();
+        const q = vuzInp.value || '';
+        if (normalizeText(q).length >= CONFIG.VUZ_MIN_CHARS) {
+          showVuzDropdown(searchVuz(q));
+        }
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!vuzDropdown.contains(e.target) && e.target !== vuzInp) hideVuzDropdown();
+      });
+
+      vuzDropdown.addEventListener('click', function (e) {
+        e.stopPropagation();
+      });
+
+      closeSuccessBtn.addEventListener('click', closeSuccess);
+    }
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      setError(errEmail, '');
+      setError(errPhone, '');
+      setError(errConsent, '');
+      setError(errCustomFaculty, '');
+      showFormMessage('');
+
+      const email = (emailInp.value || '').trim();
+      const phone = normalizePhone(phoneInp.value || '');
+      phoneInp.value = phone;
+
+      let isValid = true;
+      if (!isValidEmail(email)) {
+        setError(errEmail, 'Проверьте корректность email.');
+        isValid = false;
+      }
+      if (!isValidPhone(phone)) {
+        setError(errPhone, 'Телефон должен быть в формате +77017777777.');
+        isValid = false;
+      }
+      if (streamSel.value === 'другое' && !(customFacultyInp.value || '').trim()) {
+        setError(errCustomFaculty, 'Пожалуйста, укажите свой факультет.');
+        isValid = false;
+      }
+      if (!consentChk.checked) {
+        setError(errConsent, 'Нужно согласие, чтобы продолжить.');
+        isValid = false;
+      }
+
+      if (!isValid) return;
+
+      submitBtn.disabled = true;
+      const originalText = submitBtn.textContent;
+      submitBtn.textContent = 'Отправляем...';
+
+      try {
+        const vuzTyped = (vuzInp.value || '').trim();
+        const vuzUnified = (vuzUnifiedInp.value || '').trim();
+        const botTag = getStartParamRaw();
+        if (botTag) localStorage.setItem('bot_tag', botTag);
+
+        const payload = {
+          firstname: (firstnameInp.value || '').trim(),
+          email,
+          mobteleph: phone,
+          vuz: vuzTyped || null,
+          vuz_title: vuzTyped || null,
+          vuz_unified: vuzUnified || null,
+          careerday: CONFIG.FORUM_FIXED,
+          landing_type: landingTypeInp.value || 'kzkf_tg',
+          year_of_grad: yearSel.value || null,
+          age: null,
+          stream: streamFinalInp.value || streamSel.value || null,
+          consent: true,
+          form_source: 'telegram_webapp',
+          page_url: location.href,
+          ts: new Date().toISOString(),
+          bot_tag: botTag || ''
+        };
+
+        const url = new URL(location.href);
+        payload.utm_source = url.searchParams.get('utm_source') || '';
+        payload.utm_medium = url.searchParams.get('utm_medium') || '';
+        payload.utm_campaign = url.searchParams.get('utm_campaign') || '';
+        payload.utm_content = url.searchParams.get('utm_content') || '';
+        payload.utm_term = url.searchParams.get('utm_term') || '';
+
+        if (tg) {
+          payload.tg_init_data = tg.initData || '';
+          payload.tg_user_id = tg.initDataUnsafe?.user?.id || null;
+          payload.tg_username = tg.initDataUnsafe?.user?.username || null;
+          payload.tg_first_name = tg.initDataUnsafe?.user?.first_name || null;
+          payload.tg_last_name = tg.initDataUnsafe?.user?.last_name || null;
+          payload.tg_language_code = tg.initDataUnsafe?.user?.language_code || null;
+          payload.tg_platform = tg.platform || null;
+          payload.tg_start_param = tg.initDataUnsafe?.start_param || null;
+        }
+
+        const response = await fetch(CONFIG.API_BASE, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.message || 'Ошибка отправки формы');
+        }
+
+        showSuccessMessage();
+      } catch (error) {
+        console.error('Ошибка отправки формы:', error);
+        showFormMessage('Не получилось отправить форму. Попробуйте ещё раз чуть позже.');
+        tg?.HapticFeedback?.notificationOccurred?.('error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
+    });
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+  </script>
+</body>
+</html>
